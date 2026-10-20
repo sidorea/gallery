@@ -75,6 +75,39 @@
         #image { display: none; }
         #video { display: none; }
 
+        /* Video Buffering Indicator */
+        .video-buffering-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transition: opacity 0.2s ease;
+        }
+        .spinner-circle {
+            width: 26px;
+            height: 26px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spinRing 0.8s linear infinite;
+        }
+        @keyframes spinRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Top Monorepo Navigation Bar (Modern White Glass) */
         .top-nav-bar {
             position: fixed;
@@ -364,18 +397,16 @@
             align-items: center;
             gap: 12px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.90);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            padding: 7px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            background: transparent;
+            padding: 4px 6px;
+            border: none;
+            box-shadow: none;
         }
         .time-display {
             font-size: 12px;
             font-weight: 700;
-            color: #334155;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.7);
             font-variant-numeric: tabular-nums;
             min-width: 44px;
             user-select: none;
@@ -392,22 +423,23 @@
         .progress-track {
             position: relative;
             width: 100%;
-            height: 6px;
-            background: #e2e8f0;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.35);
             border-radius: 9999px;
             overflow: visible;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
             transition: height 0.15s ease;
         }
         .progress-track-wrapper:hover .progress-track,
         .progress-track-wrapper.scrubbing .progress-track {
-            height: 8px;
+            height: 7px;
         }
         .progress-buffer-bar {
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
-            background: #cbd5e1;
+            background: rgba(255, 255, 255, 0.55);
             border-radius: 9999px;
             width: 0%;
             pointer-events: none;
@@ -427,12 +459,12 @@
             right: -7px;
             top: 50%;
             transform: translateY(-50%) scale(0);
-            width: 15px;
-            height: 15px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: #ffffff;
-            border: 2.5px solid #4f46e5;
-            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.45);
+            border: 2px solid #4f46e5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
             transition: transform 0.15s ease;
             pointer-events: none;
         }
@@ -441,19 +473,16 @@
             transform: translateY(-50%) scale(1);
         }
 
-        /* Seek Preview Canvas Tooltip */
+        /* Seek Preview Canvas Tooltip (No white background or outline) */
         .seek-preview-tooltip {
             position: absolute;
             bottom: calc(100% + 14px);
             left: 0;
             transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(226, 232, 240, 0.95);
-            border-radius: 14px;
-            padding: 6px;
-            box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2);
+            background: transparent;
+            border: none;
+            padding: 0;
+            box-shadow: none;
             display: none;
             flex-direction: column;
             align-items: center;
@@ -470,10 +499,12 @@
             border-radius: 10px;
             overflow: hidden;
             background: #000000;
+            border: none;
+            outline: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
         }
         .preview-poster,
         .preview-canvas,
@@ -500,14 +531,18 @@
             pointer-events: none;
         }
         .preview-time-badge {
-            margin-top: 5px;
-            background: #0f172a;
+            margin-top: 6px;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             color: #ffffff;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
         }
 
         /* Floating Player Bar (Modern White Glass) */
@@ -3460,8 +3495,10 @@
             /* IMAGE */
             if (item.type === "image") {
                 if (playerProgressArea) playerProgressArea.style.display = "none";
+                if (videoBufferingSpinner) videoBufferingSpinner.style.display = "none";
                 video.pause();
                 video.removeAttribute("src");
+                video.removeAttribute("poster");
                 video.load();
                 video.style.display = "none";
 
@@ -3480,12 +3517,13 @@
             updateProgressBarDisplay();
 
             // Prime instant preview poster from static thumbnail or memory cache
+            const videoThumbUrl = MEDIA_DIRECTORY + "thumbs/" + encodeURIComponent(item.filename) + ".jpg";
             if (previewPoster) {
                 let posterUrl = null;
                 if (memoryThumbnailCache.has(item.filename)) {
                     posterUrl = memoryThumbnailCache.get(item.filename);
                 } else if (hasServerThumbsDirectory) {
-                    posterUrl = MEDIA_DIRECTORY + "thumbs/" + encodeURIComponent(item.filename) + ".jpg";
+                    posterUrl = videoThumbUrl;
                 }
                 if (posterUrl) {
                     previewPoster.src = posterUrl;
@@ -3501,6 +3539,10 @@
             video.style.display = "block";
             video.pause();
 
+            // Set video poster immediately so thumbnail displays instead of blank black screen while buffering
+            video.poster = videoThumbUrl;
+            if (videoBufferingSpinner) videoBufferingSpinner.style.display = "flex";
+
             video.src = item.src;
 
             video.onloadedmetadata = () => {
@@ -3509,16 +3551,28 @@
                 applyPlaybackSpeed();
                 applyVolumeAndMute();
 
+                const startPlayback = () => {
+                    playVideoSafely();
+                };
+
                 if (savedTime > 0 && Number.isFinite(video.duration) && savedTime < video.duration - 0.5) {
                     video.currentTime = savedTime;
                     const onSeekedReady = () => {
                         video.removeEventListener("seeked", onSeekedReady);
-                        playVideoSafely();
+                        if (video.readyState >= 3) {
+                            startPlayback();
+                        } else {
+                            video.addEventListener("canplay", startPlayback, { once: true });
+                        }
                     };
                     video.addEventListener("seeked", onSeekedReady, { once: true });
                 } else {
                     video.currentTime = 0;
-                    playVideoSafely();
+                    if (video.readyState >= 3) {
+                        startPlayback();
+                    } else {
+                        video.addEventListener("canplay", startPlayback, { once: true });
+                    }
                 }
             };
 
