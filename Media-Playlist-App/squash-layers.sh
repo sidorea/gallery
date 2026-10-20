@@ -23,12 +23,30 @@ NEXT_NUM=$((CURRENT_NUM + 1))
 NEXT_TAG="v${NEXT_NUM}"
 TARGET_IMAGE="${DOCKER_REPO}:${NEXT_TAG}"
 
+# Push to Docker Hub by default unless --no-push or NO_PUSH=1 is specified
+PUSH_TO_HUB=true
+for arg in "$@"; do
+    case "$arg" in
+        --no-push)
+            PUSH_TO_HUB=false
+            ;;
+        --push)
+            PUSH_TO_HUB=true
+            ;;
+    esac
+done
+
+if [ "${NO_PUSH:-0}" = "1" ]; then
+    PUSH_TO_HUB=false
+fi
+
 echo "=========================================="
 echo " Container Layer Squashing & Consolidation"
 echo "=========================================="
 echo "Active Container : $CONTAINER_NAME"
 echo "Current Version  : $CURRENT_TAG"
 echo "New Target Tag   : $NEXT_TAG ($TARGET_IMAGE)"
+echo "Push to Hub      : $PUSH_TO_HUB"
 echo "=========================================="
 
 # Create safety backups
@@ -101,6 +119,15 @@ fi
 
 # Restart container with newly squashed image
 "$SCRIPT_DIR/run-container.sh"
+
+if [ "$PUSH_TO_HUB" = true ]; then
+    echo "=========================================="
+    echo "[PUSH] Pushing $TARGET_IMAGE and ${DOCKER_REPO}:latest to Docker Hub..."
+    echo "=========================================="
+    docker push "$TARGET_IMAGE"
+    docker push "${DOCKER_REPO}:latest"
+    echo "[PUSH] Successfully pushed $TARGET_IMAGE to Docker Hub!"
+fi
 
 SUCCESS=1
 echo "=========================================="

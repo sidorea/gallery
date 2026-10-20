@@ -22,6 +22,23 @@ NEXT_TAG="v${NEXT_NUM}"
 BASE_IMAGE="${DOCKER_REPO}:${CURRENT_TAG}"
 FULL_IMAGE_NAME="${DOCKER_REPO}:${NEXT_TAG}"
 
+# Push to Docker Hub by default unless --no-push or NO_PUSH=1 is specified
+PUSH_TO_HUB=true
+for arg in "$@"; do
+    case "$arg" in
+        --no-push)
+            PUSH_TO_HUB=false
+            ;;
+        --push)
+            PUSH_TO_HUB=true
+            ;;
+    esac
+done
+
+if [ "${NO_PUSH:-0}" = "1" ]; then
+    PUSH_TO_HUB=false
+fi
+
 echo "=========================================="
 echo " Modern Docker Buildx Incremental Updater"
 echo "=========================================="
@@ -29,6 +46,7 @@ echo "Current Version: $CURRENT_TAG"
 echo "Target  Version: $NEXT_TAG"
 echo "Target  Image  : $FULL_IMAGE_NAME"
 echo "Base Cache From: $BASE_IMAGE"
+echo "Push to Hub    : $PUSH_TO_HUB"
 echo "=========================================="
 
 # Create backups for safety rollback
@@ -90,6 +108,15 @@ fi
 if [ -x "$SCRIPT_DIR/run-container.sh" ]; then
     echo "[DEPLOY] Restarting media-playlist container with $FULL_IMAGE_NAME via run-container.sh..."
     "$SCRIPT_DIR/run-container.sh"
+fi
+
+if [ "$PUSH_TO_HUB" = true ]; then
+    echo "=========================================="
+    echo "[PUSH] Pushing $FULL_IMAGE_NAME and ${DOCKER_REPO}:latest to Docker Hub..."
+    echo "=========================================="
+    docker push "$FULL_IMAGE_NAME"
+    docker push "${DOCKER_REPO}:latest"
+    echo "[PUSH] Successfully pushed $FULL_IMAGE_NAME to Docker Hub!"
 fi
 
 BUILD_SUCCESS=1

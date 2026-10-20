@@ -73,28 +73,21 @@
 
 ---
 
-## ⚡ Quickstart Deployment on Ubuntu 26.04 LTS
+## ⚡ Quickstart Deployment on Ubuntu 24.04 / 26.04 LTS
 
-### 1. Run Media-Playlist Container (Port 8083)
-```bash
-cd /home/ubuntu/gallery/Media-Playlist-App
-./run-container.sh
-```
-Access Player at `http://<SERVER_IP>:8083/`
+Deploy all applications, services, and containers with a single command:
 
-### 2. Deploy File-Upload-App (Port 80)
 ```bash
-cd /home/ubuntu/gallery/File-Upload-App/deploy
+cd /home/ubuntu/gallery
 ./setup.sh
 ```
-Access Upload Portal at `http://<SERVER_IP>/`
 
-### 3. Deploy Media-Organizer-App (Port 9083)
-```bash
-cd /home/ubuntu/gallery/Media-Organizer-App/deploy
-./setup.sh
-```
-Access Organizer Studio at `http://<SERVER_IP>:9083/`
+This single unified setup script automatically:
+1. Allocates a 2GB swapfile if system RAM < 4GB.
+2. Installs system packages (`docker.io`, `python3`, `nginx`, `rsync`, `ffmpeg`).
+3. Deploys **File-Upload-App** on **Port 80** with host Nginx reverse proxy.
+4. Deploys the unified **`media-playlist` container** serving both the **Web Media Player** on **Port 8083** and the **Media Organizer Studio** on **Port 9083**.
+5. Runs health checks and outputs active URLs.
 
 ---
 

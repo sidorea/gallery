@@ -190,17 +190,20 @@ class DockerSnapshotService:
             if os.path.exists(run_script):
                 subprocess.run(["bash", run_script], check=False)
 
-            # Optional Docker Push
+            # Docker Push
             if push_to_hub:
-                self._broadcast(f"[PUSH] Pushing {target_image} to Docker Hub...\n")
-                push_proc = subprocess.Popen(
-                    ["docker", "push", target_image],
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-                )
-                for line in iter(push_proc.stdout.readline, ''):
-                    self._broadcast(line)
-                push_proc.stdout.close()
-                push_proc.wait()
+                self._broadcast(f"[PUSH] Pushing {target_image} and {latest_image} to Docker Hub...\n")
+                for img_to_push in [target_image, latest_image]:
+                    self._broadcast(f"[PUSH] Pushing {img_to_push}...\n")
+                    push_proc = subprocess.Popen(
+                        ["docker", "push", img_to_push],
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+                    )
+                    for line in iter(push_proc.stdout.readline, ''):
+                        self._broadcast(line)
+                    push_proc.stdout.close()
+                    push_proc.wait()
+                self._broadcast("[PUSH] Successfully pushed image and latest to Docker Hub!\n")
 
             # Clean up backups
             self._remove_backups(bak_version, bak_dockerfile, bak_run)

@@ -43,3 +43,12 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Media Files & User Uploads (do not push videos/photos to git)
+files/*
+!files/.gitkeep
+files/thumbs/*
+!files/thumbs/.gitkeep
+files/thumbs/seek/*
+!files/thumbs/seek/.gitkeep
+
