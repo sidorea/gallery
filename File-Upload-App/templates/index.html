@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery File Upload Portal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand-box">
+        <div class="logo-badge">G</div>
+        <div class="brand-text">
+          <h1>Gallery Upload Portal</h1>
+          <p>Automated Drop-Box & Build Pipeline (Port 80)</p>
+        </div>
+      </div>
+      <div class="nav-stats">
+        <div class="badge badge-version" id="versionBadge">Ver: v1</div>
+        <div class="badge" id="fileCountBadge">Media: 0 Files</div>
+
+        <!-- Companion Monorepo Links -->
+        <a href="http://98.87.161.87:8083/" target="_blank" class="badge" style="text-decoration:none; cursor:pointer;" title="Open Web Player">
+          Player (8083) &nearr;
+        </a>
+        <a href="http://98.87.161.87:9083/" target="_blank" class="badge" style="text-decoration:none; cursor:pointer;" title="Open Media Organizer Studio">
+          Studio (9083) &nearr;
+        </a>
+
+        <button class="badge" id="btnOpenTerminal" style="cursor:pointer;" title="View Live Build Terminal">
+          <span class="status-dot" id="headerStatusDot"></span> Logs
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-wrapper">
+    <section class="card-panel">
+      <!-- Drag & Drop Zone -->
+      <div class="dropzone" id="dropzone">
+        <div class="drop-icon-box">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </div>
+        <h2>Drag and drop media files here</h2>
+        <p>Supports MP4, WEBM, MOV, MKV, JPG, PNG, WEBP, ZIP archives (unlimited file size)</p>
+        <p style="margin-top: 8px; font-weight:600; color:var(--primary);">or click to browse from device</p>
+        <input type="file" id="fileInput" class="dropzone-file-input" multiple>
+      </div>
+
+      <!-- Buildx Toggle Switch -->
+      <div class="options-bar">
+        <label class="option-label" for="buildToggle">
+          <div class="switch">
+            <input type="checkbox" id="buildToggle" checked>
+            <span class="slider"></span>
+          </div>
+          <span>Build & Deploy to Docker (<code>bash update-file.sh</code>) automatically after upload</span>
+        </label>
+      </div>
+
+      <!-- File Queue Area -->
+      <div class="queue-section" id="queueSection" style="display:none;">
+        <div class="queue-header">
+          <div class="queue-title">Upload Queue (<span id="queueCount">0</span>)</div>
+          <div class="queue-meta" id="queueTotalSize">Total: 0 MB</div>
+        </div>
+        <div class="queue-list" id="queueList"></div>
+      </div>
+
+      <!-- Progress Card -->
+      <div class="progress-card" id="progressCard">
+        <div class="progress-info-row">
+          <span class="progress-text" id="progressText">Uploading...</span>
+          <span class="progress-stats" id="progressStats">0% &bull; 0 MB/s &bull; ETA: --</span>
+        </div>
+        <div class="progress-outer-bar">
+          <div class="progress-inner-bar" id="progressBar"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons Bar -->
+      <div class="actions-bar">
+        <button class="btn btn-secondary" id="btnClearQueue" style="display:none;">Clear Queue</button>
+        <button class="btn btn-danger" id="btnAbortUpload" style="display:none;">Abort Upload</button>
+        <button class="btn btn-secondary" id="btnUploadOnly" disabled>Upload Files Only</button>
+        <button class="btn btn-primary" id="btnUploadAndBuild" disabled>Upload & Trigger Build</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Live Terminal Log Modal -->
+  <div class="modal-overlay" id="terminalModal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="status-dot" id="terminalStatusDot"></span>
+          <h3 class="modal-title">Live Build Terminal (update-file.sh)</h3>
+        </div>
+        <button class="btn btn-secondary" id="btnCloseTerminal" style="padding:6px 12px; font-size:0.8rem;">Close</button>
+      </div>
+
+      <div class="terminal-body" id="terminalOutput">Awaiting build connection...</div>
+
+      <div class="terminal-footer">
+        <div class="terminal-controls">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="autoScrollCheck" checked> Auto-scroll
+          </label>
+          <span class="badge" id="terminalLineBadge">0 lines</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary" id="btnCopyLogs" style="padding:8px 14px; font-size:0.82rem;">Copy Logs</button>
+          <button class="btn btn-danger" id="btnAbortBuild" style="padding:8px 14px; font-size:0.82rem;">Abort Build</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/upload.js"></script>
+</body>
+</html>

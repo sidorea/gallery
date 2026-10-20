@@ -1,0 +1,13 @@
+files/
+.git/
+venv/
+.venv/
+/var/www/
+*.bak
+*.bak.*
+Media-Organizer-App/backups/*.json
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db

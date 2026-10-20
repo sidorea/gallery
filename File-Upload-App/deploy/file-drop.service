@@ -1,0 +1,22 @@
+[Unit]
+Description=File Upload App Gunicorn Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/file-drop
+Environment="PATH=/var/www/file-drop/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/var/www/file-drop/venv/bin/gunicorn \
+    --bind 127.0.0.1:5000 \
+    --workers 2 \
+    --timeout 3600 \
+    --access-logfile - \
+    --error-logfile - \
+    app:app
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

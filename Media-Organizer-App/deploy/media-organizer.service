@@ -1,0 +1,22 @@
+[Unit]
+Description=Media Organizer App Gunicorn Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/media-organizer
+Environment="PATH=/var/www/media-organizer/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/var/www/media-organizer/venv/bin/gunicorn \
+    --bind 0.0.0.0:9083 \
+    --workers 2 \
+    --timeout 3600 \
+    --access-logfile - \
+    --error-logfile - \
+    app:app
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
