@@ -93,7 +93,6 @@ docker buildx build \
     --progress=plain \
     --cache-from "$BASE_IMAGE" \
     -t "$FULL_IMAGE_NAME" \
-    -t "${DOCKER_REPO}:latest" \
     -f Dockerfile ..
 
 echo "[VERSION] Updating $VERSION_FILE to $NEXT_TAG..."
@@ -112,10 +111,9 @@ fi
 
 if [ "$PUSH_TO_HUB" = true ]; then
     echo "=========================================="
-    echo "[PUSH] Pushing $FULL_IMAGE_NAME and ${DOCKER_REPO}:latest to Docker Hub..."
+    echo "[PUSH] Pushing $FULL_IMAGE_NAME to Docker Hub..."
     echo "=========================================="
     docker push "$FULL_IMAGE_NAME"
-    docker push "${DOCKER_REPO}:latest"
     echo "[PUSH] Successfully pushed $FULL_IMAGE_NAME to Docker Hub!"
 fi
 

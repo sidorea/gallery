@@ -92,9 +92,6 @@ docker export "$TEMP_EXPORT_CONTAINER" | docker import \
 
 docker rm -f "$TEMP_EXPORT_CONTAINER" 2>/dev/null || true
 
-# Tag latest
-docker tag "$TARGET_IMAGE" "${DOCKER_REPO}:latest"
-
 echo "[VERIFY] Checking filesystem layer count..."
 LAYER_COUNT=$(docker inspect --format '{{len .RootFS.Layers}}' "$TARGET_IMAGE" 2>/dev/null || echo 0)
 echo "RootFS Layers Count: $LAYER_COUNT"
@@ -122,10 +119,9 @@ fi
 
 if [ "$PUSH_TO_HUB" = true ]; then
     echo "=========================================="
-    echo "[PUSH] Pushing $TARGET_IMAGE and ${DOCKER_REPO}:latest to Docker Hub..."
+    echo "[PUSH] Pushing $TARGET_IMAGE to Docker Hub..."
     echo "=========================================="
     docker push "$TARGET_IMAGE"
-    docker push "${DOCKER_REPO}:latest"
     echo "[PUSH] Successfully pushed $TARGET_IMAGE to Docker Hub!"
 fi
 

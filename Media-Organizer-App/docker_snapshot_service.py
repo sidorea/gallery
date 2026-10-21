@@ -71,7 +71,6 @@ class DockerSnapshotService:
         next_num = curr_num + 1
         next_tag = f"v{next_num}"
         target_image = f"{DOCKER_REPO}:{next_tag}"
-        latest_image = f"{DOCKER_REPO}:latest"
 
         self._broadcast(f"Current Governance Tag: {curr_tag}\n")
         self._broadcast(f"New Target Tag        : {next_tag} ({target_image})\n")
@@ -117,7 +116,8 @@ class DockerSnapshotService:
 
             # 3. Export and Import into 1 single layer
             self._broadcast("[EXPORT] Streaming container filesystem into single consolidated layer...\n")
-            export_cmd = f"docker export {temp_container} | docker import --change 'EXPOSE 80 9083' --change 'CMD [\"/entrypoint.sh\"]' - {target_image}"
+            self._broadcast("[NOTE] Packaging files and squashing layers may take 30-60 seconds. Please wait...\n")
+            export_cmd = f"docker export {temp_container} | docker import --change 'EXPOSE 80 9083' --change 'ENTRYPOINT [\"/entrypoint.sh\"]' - {target_image}"
             proc = subprocess.Popen(
                 export_cmd,
                 shell=True,
@@ -125,6 +125,14 @@ class DockerSnapshotService:
                 stderr=subprocess.PIPE,
                 text=True
             )
+            # Periodic heartbeat while packaging
+            start_time = time.time()
+            while proc.poll() is None:
+                time.sleep(5)
+                elapsed = int(time.time() - start_time)
+                if proc.poll() is None:
+                    self._broadcast(f"[EXPORT] Consolidating layers in progress ({elapsed}s elapsed)...\n")
+
             stdout, stderr = proc.communicate()
             subprocess.run(["docker", "rm", "-f", temp_container], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -137,10 +145,6 @@ class DockerSnapshotService:
                 return
 
             self._broadcast(f"[IMPORT] Image created: {stdout.strip()}\n")
-
-            # Tag latest
-            subprocess.run(["docker", "tag", target_image, latest_image], check=True)
-            self._broadcast(f"[TAG] Tagged {latest_image}\n")
 
             # 4. Verify Layer Count
             self._broadcast("[VERIFY] Verifying 1-layer filesystem consolidation...\n")
@@ -184,33 +188,39 @@ class DockerSnapshotService:
                     check=False
                 )
 
-            # Restart media-playlist container with new image
-            self._broadcast("[DEPLOY] Restarting media-playlist container on port 8083...\n")
-            run_script = os.path.join(MEDIA_PLAYLIST_DIR, "run-container.sh")
-            if os.path.exists(run_script):
-                subprocess.run(["bash", run_script], check=False)
-
-            # Docker Push
+            # 6. Docker Push (Run BEFORE container restart so logs can stream live to the client)
             if push_to_hub:
-                self._broadcast(f"[PUSH] Pushing {target_image} and {latest_image} to Docker Hub...\n")
-                for img_to_push in [target_image, latest_image]:
-                    self._broadcast(f"[PUSH] Pushing {img_to_push}...\n")
-                    push_proc = subprocess.Popen(
-                        ["docker", "push", img_to_push],
-                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-                    )
-                    for line in iter(push_proc.stdout.readline, ''):
+                self._broadcast(f"[PUSH] Pushing {target_image} to Docker Hub...\n")
+                push_proc = subprocess.Popen(
+                    ["docker", "push", target_image],
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+                )
+                for line in iter(push_proc.stdout.readline, ''):
+                    if line:
                         self._broadcast(line)
-                    push_proc.stdout.close()
-                    push_proc.wait()
-                self._broadcast("[PUSH] Successfully pushed image and latest to Docker Hub!\n")
+                push_proc.stdout.close()
+                rc = push_proc.wait()
+                if rc == 0:
+                    self._broadcast(f"[PUSH] Successfully pushed {target_image} to Docker Hub!\n")
+                else:
+                    self._broadcast(f"[WARNING] Failed to push {target_image} (Exit code {rc}). Check docker login.\n")
 
             # Clean up backups
             self._remove_backups(bak_version, bak_dockerfile, bak_run)
 
             self._broadcast("===========================================\n")
-            self._broadcast(f"Container snapshot successful! New 1-layer image: {target_image}\n")
+            self._broadcast(f"🎉 Container snapshot successful! New 1-layer image: {target_image}\n")
             self._broadcast("===========================================\n")
+
+            # Deployment status
+            if not os.path.exists("/.dockerenv"):
+                run_script = os.path.join(MEDIA_PLAYLIST_DIR, "run-container.sh")
+                if os.path.exists(run_script):
+                    self._broadcast("[DEPLOY] Restarting media-playlist container with new image...\n")
+                    subprocess.run(["bash", run_script], check=False)
+            else:
+                self._broadcast("[INFO] Active media library and player continue serving uninterrupted via live storage.\n")
+                self._broadcast(f"[INFO] Image {target_image} is built, consolidated, and ready.\n")
 
             with self.lock:
                 self.last_status = "success"
@@ -227,11 +237,26 @@ class DockerSnapshotService:
     def _revert_backups(self, bak_version, bak_dockerfile, bak_run):
         self._broadcast("[ROLLBACK] Reverting configuration backups...\n")
         if os.path.exists(bak_version):
-            shutil.move(bak_version, VERSION_FILE)
+            try:
+                with open(bak_version, 'r') as bf:
+                    content = bf.read()
+                with open(VERSION_FILE, 'w') as vf:
+                    vf.write(content)
+                os.remove(bak_version)
+            except Exception:
+                shutil.move(bak_version, VERSION_FILE)
         if os.path.exists(bak_dockerfile):
-            shutil.move(bak_dockerfile, DOCKERFILE_PATH)
+            try:
+                shutil.copy2(bak_dockerfile, DOCKERFILE_PATH)
+                os.remove(bak_dockerfile)
+            except Exception:
+                pass
         if os.path.exists(bak_run):
-            shutil.move(bak_run, RUN_SCRIPT_PATH)
+            try:
+                shutil.copy2(bak_run, RUN_SCRIPT_PATH)
+                os.remove(bak_run)
+            except Exception:
+                pass
 
     def _remove_backups(self, bak_version, bak_dockerfile, bak_run):
         for p in (bak_version, bak_dockerfile, bak_run):

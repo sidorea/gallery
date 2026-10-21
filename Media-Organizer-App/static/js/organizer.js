@@ -626,6 +626,7 @@
   // Docker Snapshot Studio & SSE
   btnCreateDocker.addEventListener('click', () => {
     dockerModal.classList.add('open');
+    connectDockerSSE();
   });
 
   btnCloseDockerModal.addEventListener('click', () => dockerModal.classList.remove('open'));
@@ -633,7 +634,10 @@
 
   let dockerEventSource = null;
   function connectDockerSSE() {
-    if (dockerEventSource) return;
+    if (dockerEventSource) {
+      dockerEventSource.close();
+      dockerEventSource = null;
+    }
     dockerEventSource = new EventSource('/api/docker-snapshot/stream');
     dockerEventSource.onmessage = (e) => {
       if (dockerTerminalOutput.textContent === 'Awaiting snapshot command...') {
@@ -641,6 +645,14 @@
       }
       dockerTerminalOutput.textContent += e.data + '\n';
       dockerTerminalOutput.scrollTop = dockerTerminalOutput.scrollHeight;
+
+      if (e.data.includes('successful!') || e.data.includes('[FATAL]') || e.data.includes('[ROLLBACK]')) {
+        btnStartSnapshotExec.disabled = false;
+        loadAppInfo();
+      }
+    };
+    dockerEventSource.onerror = () => {
+      // EventSource reconnect handled by browser automatically
     };
   }
 
@@ -666,10 +678,40 @@
   });
 
   btnCopyDockerLogs.addEventListener('click', () => {
-    navigator.clipboard.writeText(dockerTerminalOutput.textContent).then(() => {
+    const text = dockerTerminalOutput.textContent;
+    if (!text || text.trim() === '' || text.trim() === 'Awaiting snapshot command...') {
+      showToast('No logs to copy.');
+      return;
+    }
+
+    const setCopied = () => {
       btnCopyDockerLogs.textContent = 'Copied!';
       setTimeout(() => { btnCopyDockerLogs.textContent = 'Copy Logs'; }, 2000);
-    });
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(setCopied).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+
+    function fallbackCopy() {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied();
+      } catch (err) {
+        alert('Could not automatically copy logs. Please select and copy text from the terminal.');
+      }
+    }
   });
 
   // Init

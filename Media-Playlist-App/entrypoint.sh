@@ -16,7 +16,8 @@ chmod -R 777 /usr/share/nginx/html/files 2>/dev/null || true
 echo "[INIT] Starting Media-Organizer-App (Gunicorn) on 0.0.0.0:9083..."
 cd /app/Media-Organizer-App
 gunicorn --bind 0.0.0.0:9083 \
-         --workers 2 \
+         --workers 1 \
+         --threads 8 \
          --timeout 3600 \
          --access-logfile - \
          --error-logfile - \

@@ -277,10 +277,35 @@
   });
 
   btnCopyLogs.addEventListener('click', () => {
-    navigator.clipboard.writeText(terminalOutput.textContent).then(() => {
+    const text = terminalOutput.textContent;
+    if (!text || text.trim() === '') return;
+
+    const setCopied = () => {
       btnCopyLogs.textContent = 'Copied!';
       setTimeout(() => { btnCopyLogs.textContent = 'Copy Logs'; }, 2000);
-    });
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(setCopied).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+
+    function fallbackCopy() {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied();
+      } catch (err) {}
+    }
   });
 
   btnAbortBuild.addEventListener('click', async () => {
